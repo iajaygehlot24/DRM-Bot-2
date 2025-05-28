@@ -1,11 +1,17 @@
-# Use Render’s official Python image
+# Use Render’s official Python slim image
 FROM python:3.11-slim
 
-# Update package lists and install ffmpeg with retries and cleanup
-RUN apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+# Set non-interactive frontend for apt-get to avoid prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package lists and install ffmpeg with retries and debugging
+RUN apt-get update --fix-missing || (echo "apt-get update failed, retrying..." && apt-get update --fix-missing) && \
+    apt-get install -y --no-install-recommends ffmpeg || (echo "apt-get install ffmpeg failed, listing available packages..." && apt list ffmpeg) && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Verify ffmpeg installation
+RUN ffmpeg -version || (echo "ffmpeg installation failed" && exit 1)
 
 # Set working directory
 WORKDIR /app
