@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: SAINI TXT DIRECT 
+    name: drm-bot-2
     plan: free
-    env: docker
+    env: python
     dockerfilePath: Dockerfile
-    repo: https://github.com/nikhilsainiop/Saini-txt-direct
+    repo: https://github.com/NARUJAT/DRM-Bot-2
     branch: main
     autoDeploy: false
     envVars:
