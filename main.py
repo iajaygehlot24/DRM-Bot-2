@@ -1,108 +1,31 @@
 import os
-from pyrogram import Client as AFK, idle
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter
-from pyrogram import enums
-from pyrogram.types import ChatMember
-import asyncio
-import logging
-import tgcrypto
-from pyromod import listen
-import logging
-from tglogging import TelegramLogHandler
+from pyrogram import Client, idle, filters
 from aiohttp import web
 
-# Config 
-class Config(object):
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "7968712113:AAFxGzK4P8I-CtMgLAjOuSzaNBDpcmHI_pY")
-    API_ID = int(os.environ.get("API_ID",  "10634878"))
-    API_HASH = os.environ.get("API_HASH", "2eab99b8459017fff27395cc52f3c860")
-    DOWNLOAD_LOCATION = "./DOWNLOADS"
-    SESSIONS = "./SESSIONS"
-
-    AUTH_USERS = os.environ.get('AUTH_USERS', '1168219996').split(',')
-    for i in range(len(AUTH_USERS)):
-        AUTH_USERS[i] = int(AUTH_USERS[i])
-
-    GROUPS = os.environ.get('GROUPS', '-1002237293282').split(',')
-    for i in range(len(GROUPS)):
-        GROUPS[i] = int(GROUPS[i])
-
-    LOG_CH = os.environ.get("LOG_CH", "-1002510823834")
-
-# TelegramLogHandler is a custom handler which is inherited from an existing handler. ie, StreamHandler.
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s - %(levelname)s] - %(name)s - %(message)s",
-    datefmt='%d-%b-%y %H:%M:%S',
-    handlers=[
-        TelegramLogHandler(
-            token=Config.BOT_TOKEN, 
-            log_chat_id= Config.LOG_CH, 
-            update_interval=2, 
-            minimum_lines=1, 
-            pending_logs=200000),
-        logging.StreamHandler()
-    ]
+app = Client(
+    "my_bot",
+    api_id=os.getenv("10634878"),
+    api_hash=os.getenv("2eab99b8459017fff27395cc52f3c860"),
+    bot_token=os.getenv("7968712113:AAFxGzK4P8I-CtMgLAjOuSzaNBDpcmHI_pY")
 )
 
-LOGGER = logging.getLogger(__name__)
-LOGGER.info("live log streaming to telegram.")
+print(f"API_ID: {os.getenv('API_ID')}, API_HASH: {os.getenv('API_HASH')}, BOT_TOKEN: {os.getenv('BOT_TOKEN')}")
 
+@app.on_message(filters.command("start"))
+async def start(client, message):
+    await message.reply("Welcome to DRM-Bot-2!")
 
-# Store
-class Store(object):
-    CPTOKEN = "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJpZCI6MzgzNjkyMTIsIm9yZ0lkIjoyNjA1LCJ0eXBlIjoxLCJtb2JpbGUiOiI5MTcwODI3NzQyODkiLCJuYW1lIjoiQWNlIiwiZW1haWwiOm51bGwsImlzRmlyc3RMb2dpbiI6dHJ1ZSwiZGVmYXVsdExhbmd1YWdlIjpudWxsLCJjb3VudHJ5Q29kZSI6IklOIiwiaXNJbnRlcm5hdGlvbmFsIjowLCJpYXQiOjE2NDMyODE4NzcsImV4cCI6MTY0Mzg4NjY3N30.hM33P2ai6ivdzxPPfm01LAd4JWv-vnrSxGXqvCirCSpUfhhofpeqyeHPxtstXwe0"
-    SPROUT_URL = "https://discuss.oliveboard.in/"
-    ADDA_TOKEN = ""
-    THUMB_URL = "https://telegra.ph/file/84870d6d89b893e59c5f0.jpg"
+@app.on_message(filters.command("pro"))
+async def pro(client, message):
+    await message.reply("Downloading video...")
+    # ... your existing logic for downloading videos ...
 
-# Format
-class Msg(object):
-    START_MSG = "**/pro**"
+async def handle_webhook(request):
+    update = await request.json()
+    await app.handle_update(update)
+    return web.Response(text="OK")
 
-    TXT_MSG = "Hey <b>{user},"\
-        "\n\n`I'm Multi-Talented Robot. I Can Download Many Type of Links.`"\
-            "\n\nSend a TXT or HTML file :-</b>"
-
-    ERROR_MSG = "<b>DL Failed ({no_of_files}) :-</b> "\
-        "\n\n<b>Name: </b>{file_name},\n<b>Link:</b> `{file_link}`\n\n<b>Error:</b> {error}"
-
-    SHOW_MSG = "<b>Downloading :- "\
-        "\n`{file_name}`\n\nLink :- `{file_link}`</b>"
-
-    CMD_MSG_1 = "`{txt}`\n\n**Total Links in File are :-** {no_of_links}\n\n**Send any Index From `[ 1 - {no_of_links} ]` :-**"
-    CMD_MSG_2 = "<b>Uploading :- </b> `{file_name}`"
-    RESTART_MSG = "✅ HI Bhai log\n✅ PATH CLEARED"
-
-# Prefixes
-prefixes = ["/", "~", "?", "!", "."]
-
-# Client
-plugins = dict(root="plugins")
-if __name__ == "__main__":
-    if not os.path.isdir(Config.DOWNLOAD_LOCATION):
-        os.makedirs(Config.DOWNLOAD_LOCATION)
-    if not os.path.isdir(Config.SESSIONS):
-        os.makedirs(Config.SESSIONS)
-
-    PRO = AFK(
-        "AFK-DL",
-        bot_token=Config.BOT_TOKEN,
-        api_id=Config.API_ID,
-        api_hash=Config.API_HASH,
-        sleep_threshold=120,
-        plugins=plugins,
-        workdir= f"{Config.SESSIONS}/",
-        workers= 2,
-    )
-
-    chat_id = []
-    for i, j in zip(Config.GROUPS, Config.AUTH_USERS):
-        chat_id.append(i)
-        chat_id.append(j)
-    
-    
-  async def start():
+async def start():
     await app.start()
     webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook"
     await app.set_webhook(webhook_url)
@@ -116,8 +39,8 @@ if __name__ == "__main__":
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     print(f"Webhook server running on port {port}")
-     
-      async def stop():
+
+async def stop():
     await app.delete_webhook()
     await app.stop()
 
@@ -125,6 +48,3 @@ if __name__ == "__main__":
     app.run(start())
     idle()
     app.run(stop())
-
-    asyncio.get_event_loop().run_until_complete(main())
-    LOGGER.info(f"<---Bot Stopped--->")
