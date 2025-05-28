@@ -1,12 +1,14 @@
 # Use Render’s official Python slim image
 FROM python:3.11-slim
 
-# Set non-interactive frontend for apt-get to avoid prompts
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Update package lists and install ffmpeg with retries and debugging
-RUN apt-get update --fix-missing || (echo "apt-get update failed, retrying..." && apt-get update --fix-missing) && \
-    apt-get install -y --no-install-recommends ffmpeg || (echo "apt-get install ffmpeg failed, listing available packages..." && apt list ffmpeg) && \
+# Download and install a prebuilt ffmpeg binary
+RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends wget && \
+    wget -O /tmp/ffmpeg.tar.xz https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+    tar -C /tmp -xJf /tmp/ffmpeg.tar.xz && \
+    mv /tmp/ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ && \
+    mv /tmp/ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ && \
+    rm -rf /tmp/ffmpeg* && \
+    apt-get remove -y wget && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
