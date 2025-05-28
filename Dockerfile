@@ -1,29 +1,37 @@
-# Use Render’s official Python slim image
-FROM python:3.11-slim
+# Use a Python 3.9.6 Alpine base image
+FROM python:3.9.6-alpine3.14
 
-# Download and install a prebuilt ffmpeg binary
-RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends wget && \
-    wget -O /tmp/ffmpeg.tar.xz https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
-    tar -C /tmp -xJf /tmp/ffmpeg.tar.xz && \
-    mv /tmp/ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ && \
-    mv /tmp/ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ && \
-    rm -rf /tmp/ffmpeg* && \
-    apt-get remove -y wget && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Verify ffmpeg installation
-RUN ffmpeg -version || (echo "ffmpeg installation failed" && exit 1)
-
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application
+# Copy all files from the current directory to the container's /app directory
 COPY . .
 
-# Command to run the bot
-CMD ["python3", "-m", "main"]
+# Install necessary dependencies
+RUN apk add --no-cache \
+    gcc \
+    libffi-dev \
+    musl-dev \
+    ffmpeg \
+    aria2 \
+    make \
+    g++ \
+    cmake && \
+    wget -q https://github.com/axiomatic-systems/Bento4/archive/v1.6.0-639.zip && \
+    unzip v1.6.0-639.zip && \
+    cd Bento4-1.6.0-639 && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    cp mp4decrypt /usr/local/bin/ &&\
+    cd ../.. && \
+    rm -rf Bento4-1.6.0-639 v1.6.0-639.zip
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir --upgrade -r sainibots.txt \
+    && python3 -m pip install -U yt-dlp
+
+# Set the command to run the application
+CMD ["sh", "-c", "gunicorn app:app & python3 main.py"]
