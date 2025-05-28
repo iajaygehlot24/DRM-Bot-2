@@ -9,6 +9,7 @@ import tgcrypto
 from pyromod import listen
 import logging
 from tglogging import TelegramLogHandler
+from aiohttp import web
 
 # Config 
 class Config(object):
@@ -101,20 +102,29 @@ if __name__ == "__main__":
         chat_id.append(j)
     
     
-    async def main():
-        await PRO.start()
-        # h = await PRO.get_chat_member(chat_id= int(-1002115046888), user_id=6695586027)
-        # print(h)
-        bot_info = await PRO.get_me()
-        LOGGER.info(f"<--- @{bot_info.username} Started --->")
-        
-        for i in chat_id:
-            try:
-                await PRO.send_message(chat_id=i, text="**Bot Started! ♾ /pro **")
-            except Exception as d:
-                print(d)
-                continue
-        await idle()
+  async def start():
+    await app.start()
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook"
+    await app.set_webhook(webhook_url)
+    print(f"Webhook set to: {webhook_url}")
+
+    web_app = web.Application()
+    web_app.router.add_post('/webhook', handle_webhook)
+    port = int(os.getenv("PORT", 8000))
+    runner = web.AppRunner(web_app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"Webhook server running on port {port}")
+     
+      async def stop():
+    await app.delete_webhook()
+    await app.stop()
+
+if __name__ == "__main__":
+    app.run(start())
+    idle()
+    app.run(stop())
 
     asyncio.get_event_loop().run_until_complete(main())
     LOGGER.info(f"<---Bot Stopped--->")
