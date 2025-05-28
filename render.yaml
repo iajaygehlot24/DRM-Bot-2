@@ -2,7 +2,8 @@ services:
   - type: web
     name: drm-bot-2
     plan: free
-    env: python
+    env: docker
+    runtime: docker
     dockerfilePath: Dockerfile
     repo: https://github.com/NARUJAT/DRM-Bot-2
     branch: main
